@@ -68,11 +68,11 @@ final class PetController extends AbstractController
                 $createdPet = $petstoreClient->createPet($petData->toArray());
                 $petId = (int) ($createdPet['id'] ?? $petData->id);
 
-                $uploadMessage = $this->handleEmbeddedImageUpload($form, $petId, $petstoreClient);
+                $uploadedCount = $this->handleEmbeddedImagesUpload($form, $petId, $petstoreClient);
 
                 $this->addFlash('success', 'Zwierzak został dodany.');
-                if ($uploadMessage !== null) {
-                    $this->addFlash('success', $uploadMessage);
+                if ($uploadedCount > 0) {
+                    $this->addFlash('success', sprintf('Przesłano %d obraz(ów) do API.', $uploadedCount));
                 }
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
@@ -124,11 +124,11 @@ final class PetController extends AbstractController
                 $updatedPet = $petstoreClient->updatePet($petData->toArray());
                 $petId = (int) ($updatedPet['id'] ?? $petData->id);
 
-                $uploadMessage = $this->handleEmbeddedImageUpload($form, $petId, $petstoreClient);
+                $uploadedCount = $this->handleEmbeddedImagesUpload($form, $petId, $petstoreClient);
 
                 $this->addFlash('success', 'Zwierzak został zaktualizowany.');
-                if ($uploadMessage !== null) {
-                    $this->addFlash('success', $uploadMessage);
+                if ($uploadedCount > 0) {
+                    $this->addFlash('success', sprintf('Przesłano %d obraz(ów) do API.', $uploadedCount));
                 }
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
@@ -179,7 +179,7 @@ final class PetController extends AbstractController
         $form->handleRequest($request);
 
         if (!$form->isSubmitted() || !$form->isValid()) {
-            $this->addFlash('error', 'Nie udało się przesłać obrazu.');
+            $this->addFlash('error', 'Nie udało się przesłać obrazów.');
 
             return $this->redirectToRoute('pet_show', [
                 'id' => $id,
@@ -187,22 +187,32 @@ final class PetController extends AbstractController
         }
 
         $data = $form->getData();
-        $image = $data['image'] ?? null;
+        $images = $data['images'] ?? [];
 
-        if (!$image instanceof UploadedFile) {
-            $this->addFlash('error', 'Nie wybrano pliku.');
+        if (!is_array($images) || $images === []) {
+            $this->addFlash('error', 'Nie wybrano plików.');
 
             return $this->redirectToRoute('pet_show', [
                 'id' => $id,
             ]);
         }
 
+        $uploadedCount = 0;
+
         try {
-            $petstoreClient->uploadPetImage(
-                $id,
-                $image,
-                $data['additionalMetadata'] ?? null
-            );
+            foreach ($images as $image) {
+                if (!$image instanceof UploadedFile) {
+                    continue;
+                }
+
+                $petstoreClient->uploadPetImage(
+                    $id,
+                    $image,
+                    $data['additionalMetadata'] ?? null
+                );
+
+                $uploadedCount++;
+            }
         } catch (PetstoreApiException $exception) {
             $this->addFlash('error', $exception->getMessage());
 
@@ -211,33 +221,47 @@ final class PetController extends AbstractController
             ]);
         }
 
-        $this->addFlash('success', 'Obraz został przesłany do API.');
+        if ($uploadedCount === 0) {
+            $this->addFlash('error', 'Nie udało się przesłać żadnego obrazu.');
+        } else {
+            $this->addFlash('success', sprintf('Przesłano %d obraz(ów) do API.', $uploadedCount));
+        }
 
         return $this->redirectToRoute('pet_show', [
             'id' => $id,
         ]);
     }
 
-    private function handleEmbeddedImageUpload(FormInterface $form, int $petId, PetstoreClient $petstoreClient): ?string
+    private function handleEmbeddedImagesUpload(FormInterface $form, int $petId, PetstoreClient $petstoreClient): int
     {
         $imageUploadData = $form->get('imageUpload')->getData();
 
         if (!is_array($imageUploadData)) {
-            return null;
+            return 0;
         }
 
-        $image = $imageUploadData['image'] ?? null;
+        $images = $imageUploadData['images'] ?? [];
 
-        if (!$image instanceof UploadedFile) {
-            return null;
+        if (!is_array($images) || $images === []) {
+            return 0;
         }
 
-        $petstoreClient->uploadPetImage(
-            $petId,
-            $image,
-            $imageUploadData['additionalMetadata'] ?? null
-        );
+        $uploadedCount = 0;
 
-        return 'Obraz został przesłany do API.';
+        foreach ($images as $image) {
+            if (!$image instanceof UploadedFile) {
+                continue;
+            }
+
+            $petstoreClient->uploadPetImage(
+                $petId,
+                $image,
+                $imageUploadData['additionalMetadata'] ?? null
+            );
+
+            $uploadedCount++;
+        }
+
+        return $uploadedCount;
     }
 }
