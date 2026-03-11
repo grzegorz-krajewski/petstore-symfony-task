@@ -34,11 +34,7 @@ final class PetData
 
     public ?int $categoryId = null;
     public ?string $categoryName = null;
-
     public ?string $tagsInput = null;
-
-    #[Assert\NotBlank(message: 'Adresy zdjęć są wymagane.')]
-    public ?string $photoUrlsInput = null;
 
     public static function fromArray(array $data): self
     {
@@ -124,20 +120,6 @@ final class PetData
                 $index++;
             }
         }
-
-        $this->photoUrls = [];
-        if ($this->photoUrlsInput !== null && trim($this->photoUrlsInput) !== '') {
-            $parts = preg_split('/[\r\n,]+/', $this->photoUrlsInput) ?: [];
-
-            foreach ($parts as $part) {
-                $url = trim($part);
-                if ($url === '') {
-                    continue;
-                }
-
-                $this->photoUrls[] = $url;
-            }
-        }
     }
 
     public function syncFormInputsFromStructuredFields(): void
@@ -150,10 +132,6 @@ final class PetData
                 static fn (TagData $tag): string => (string) $tag->name,
                 $this->tags
             ))
-            : null;
-
-        $this->photoUrlsInput = $this->photoUrls !== []
-            ? implode(PHP_EOL, $this->photoUrls)
             : null;
     }
 }
