@@ -95,7 +95,7 @@ final class PetstoreClient
         }
     }
 
-    public function uploadPetImage(int $id, UploadedFile $image, ?string $additionalMetadata = null): array
+    public function uploadPetImage(int $id, UploadedFile $image, ?string $additionalMetadata = null): ?string
     {
         try {
             $response = $this->httpClient->request(
@@ -113,9 +113,26 @@ final class PetstoreClient
                 throw new PetstoreApiException('Nie udało się przesłać obrazu.');
             }
 
-            return $response->toArray(false);
+            $data = $response->toArray(false);
+
+            return $this->extractUploadedFilePath($data['message'] ?? null);
         } catch (ExceptionInterface $exception) {
             throw new PetstoreApiException('Wystąpił błąd podczas przesyłania obrazu.', 0, $exception);
         }
+    }
+
+    private function extractUploadedFilePath(?string $message): ?string
+    {
+        if ($message === null || trim($message) === '') {
+            return null;
+        }
+
+        if (preg_match('/File uploaded to\s+([^,]+),/i', $message, $matches) !== 1) {
+            return null;
+        }
+
+        $path = trim($matches[1]);
+
+        return $path !== '' ? $path : null;
     }
 }
