@@ -10,10 +10,14 @@
     <p><strong>Status:</strong> {{ pet.status ?? 'brak danych' }}</p>
 
     <p>
-        <a href="{{ path('pet_index') }}">Powrót do strony głównej</a>
+        <a href="{{ path('pet_edit', { id: pet.id }) }}">Edytuj</a>
     </p>
 
+    <form method="post" action="{{ path('pet_delete', { id: pet.id }) }}">
+        <button type="submit">Usuń</button>
+    </form>
+
     <p>
-        <a href="#">Edytuj</a>
+        <a href="{{ path('pet_index') }}">Powrót do strony głównej</a>
     </p>
 {% endblock %}
