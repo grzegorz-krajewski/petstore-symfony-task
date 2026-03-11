@@ -4,9 +4,12 @@ namespace App\Controller;
 
 use App\DTO\PetData;
 use App\Exception\PetstoreApiException;
+use App\Form\PetImageUploadType;
 use App\Form\PetType;
 use App\Service\PetstoreClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -25,7 +28,7 @@ final class PetController extends AbstractController
         $id = $request->query->getInt('id');
 
         if ($id <= 0) {
-            $this->addFlash('error', 'Podano nieprawidłowe ID.');
+            $this->addFlash('error', 'Podano nieprawidłowe ID zwierzaka.');
 
             return $this->redirectToRoute('pet_index');
         }
@@ -39,13 +42,16 @@ final class PetController extends AbstractController
         }
 
         if ($pet === null) {
-            $this->addFlash('error', 'Nie znaleziono ID.');
+            $this->addFlash('error', 'Nie znaleziono zwierzaka o podanym ID.');
 
             return $this->redirectToRoute('pet_index');
         }
 
+        $uploadForm = $this->createForm(PetImageUploadType::class);
+
         return $this->render('pet/show.html.twig', [
             'pet' => $pet,
+            'uploadForm' => $uploadForm->createView(),
         ]);
     }
 
@@ -60,6 +66,9 @@ final class PetController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 $createdPet = $petstoreClient->createPet($petData->toArray());
+                $petId = (int) ($createdPet['id'] ?? $petData->id);
+                $this->addFlash('success', 'Zwierzak został dodany.');
+
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
@@ -68,10 +77,8 @@ final class PetController extends AbstractController
                 ]);
             }
 
-            $this->addFlash('success', 'Zwierzak został dodany.');
-
             return $this->redirectToRoute('pet_show', [
-                'id' => $createdPet['id'] ?? $petData->id,
+                'id' => $petId,
             ]);
         }
 
@@ -98,12 +105,21 @@ final class PetController extends AbstractController
         }
 
         $petData = PetData::fromArray($pet);
-        $form = $this->createForm(PetType::class, $petData);
+
+        $form = $this->createForm(PetType::class, $petData, [
+            'is_edit' => true,
+        ]);
+
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $petData->id = $id;
+
             try {
                 $updatedPet = $petstoreClient->updatePet($petData->toArray());
+                $petId = (int) ($updatedPet['id'] ?? $petData->id);
+                $this->addFlash('success', 'Zwierzak został zaktualizowany.');
+
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
@@ -113,10 +129,8 @@ final class PetController extends AbstractController
                 ]);
             }
 
-            $this->addFlash('success', 'Zwierzak został zaktualizowany.');
-
             return $this->redirectToRoute('pet_show', [
-                'id' => $updatedPet['id'] ?? $petData->id,
+                'id' => $petId,
             ]);
         }
 
@@ -127,8 +141,14 @@ final class PetController extends AbstractController
     }
 
     #[Route('/pet/delete/{id}', name: 'pet_delete', methods: ['POST'])]
-    public function delete(int $id, PetstoreClient $petstoreClient): Response
+    public function delete(int $id, Request $request, PetstoreClient $petstoreClient): Response
     {
+        if (!$this->isCsrfTokenValid('delete_pet_'.$id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Nieprawidłowy token bezpieczeństwa.');
+
+            return $this->redirectToRoute('pet_index');
+        }
+
         try {
             $petstoreClient->deletePet($id);
         } catch (PetstoreApiException $exception) {
@@ -140,5 +160,76 @@ final class PetController extends AbstractController
         $this->addFlash('success', 'Zwierzak został usunięty.');
 
         return $this->redirectToRoute('pet_index');
+    }
+
+    #[Route('/pet/{id}/upload-image', name: 'pet_upload_image', methods: ['POST'])]
+    public function uploadImage(int $id, Request $request, PetstoreClient $petstoreClient): Response
+    {
+        $form = $this->createForm(PetImageUploadType::class);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('error', 'Nie udało się przesłać obrazów.');
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $id,
+            ]);
+        }
+
+        $data = $form->getData();
+        $images = $data['images'] ?? [];
+
+        if (!is_array($images) || $images === []) {
+            $this->addFlash('error', 'Nie wybrano plików.');
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $id,
+            ]);
+        }
+
+        $uploadedCount = 0;
+
+        try {
+            foreach ($images as $image) {
+                if (!$image instanceof UploadedFile) {
+                    continue;
+                }
+
+                $uploadedPath = $petstoreClient->uploadPetImage(
+                    $id,
+                    $image,
+                    $data['additionalMetadata'] ?? null
+                );
+
+                if ($uploadedPath !== null) {
+                    $pet = $petstoreClient->getPetById($id);
+
+                    if ($pet !== null) {
+                        $petData = PetData::fromArray($pet);
+                        $petData->addPhotoUrl($uploadedPath);
+
+                        $petstoreClient->updatePet($petData->toArray());
+                    }
+                }
+
+                $uploadedCount++;
+            }
+        } catch (PetstoreApiException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $id,
+            ]);
+        }
+
+        if ($uploadedCount === 0) {
+            $this->addFlash('error', 'Nie udało się przesłać żadnego obrazu.');
+        } else {
+            $this->addFlash('success', sprintf('Przesłano %d obraz(ów) do API.', $uploadedCount));
+        }
+
+        return $this->redirectToRoute('pet_show', [
+            'id' => $id,
+        ]);
     }
 }

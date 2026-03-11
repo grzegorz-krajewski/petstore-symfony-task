@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\DTO\PetData;
+use App\Support\PetOptions;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -15,9 +16,12 @@ final class PetType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $isEdit = $options['is_edit'];
+
         $builder
             ->add('id', IntegerType::class, [
                 'label' => 'ID',
+                'disabled' => $isEdit,
             ])
             ->add('name', TextType::class, [
                 'label' => 'Nazwa',
@@ -31,8 +35,21 @@ final class PetType extends AbstractType
                 ],
                 'placeholder' => 'Wybierz status',
             ])
+            ->add('selectedCategory', ChoiceType::class, [
+                'label' => 'Kategoria',
+                'required' => false,
+                'placeholder' => 'Wybierz kategorię',
+                'choices' => PetOptions::getCategoryChoices(),
+            ])
+            ->add('selectedTags', ChoiceType::class, [
+                'label' => 'Tagi',
+                'required' => false,
+                'multiple' => true,
+                'expanded' => false,
+                'choices' => PetOptions::getTagChoices(),
+            ])
             ->add('save', SubmitType::class, [
-                'label' => 'Zapisz',
+                'label' => $isEdit ? 'Zapisz zmiany' : 'Zapisz',
             ]);
     }
 
@@ -40,6 +57,7 @@ final class PetType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => PetData::class,
+            'is_edit' => false,
         ]);
     }
 }

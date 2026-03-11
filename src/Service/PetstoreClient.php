@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Exception\PetstoreApiException;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -92,5 +93,46 @@ final class PetstoreClient
         } catch (ExceptionInterface $exception) {
             throw new PetstoreApiException('Wystąpił błąd podczas usuwania zwierzaka.', 0, $exception);
         }
+    }
+
+    public function uploadPetImage(int $id, UploadedFile $image, ?string $additionalMetadata = null): ?string
+    {
+        try {
+            $response = $this->httpClient->request(
+                'POST',
+                sprintf('%s/pet/%d/uploadImage', $this->petstoreApiBaseUrl, $id),
+                [
+                    'body' => [
+                        'additionalMetadata' => $additionalMetadata ?? '',
+                        'file' => fopen($image->getPathname(), 'r'),
+                    ],
+                ]
+            );
+
+            if ($response->getStatusCode() >= 400) {
+                throw new PetstoreApiException('Nie udało się przesłać obrazu.');
+            }
+
+            $data = $response->toArray(false);
+
+            return $this->extractUploadedFilePath($data['message'] ?? null);
+        } catch (ExceptionInterface $exception) {
+            throw new PetstoreApiException('Wystąpił błąd podczas przesyłania obrazu.', 0, $exception);
+        }
+    }
+
+    private function extractUploadedFilePath(?string $message): ?string
+    {
+        if ($message === null || trim($message) === '') {
+            return null;
+        }
+
+        if (preg_match('/File uploaded to\s+([^,]+),/i', $message, $matches) !== 1) {
+            return null;
+        }
+
+        $path = trim($matches[1]);
+
+        return $path !== '' ? $path : null;
     }
 }
