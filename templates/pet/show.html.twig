@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Szczegóły {% endblock %}
+
+{% block body %}
+    <h1>Szczegóły</h1>
+
+    <p><strong>ID:</strong> {{ pet.id ?? 'brak danych' }}</p>
+    <p><strong>Nazwa:</strong> {{ pet.name ?? 'brak danych' }}</p>
+    <p><strong>Status:</strong> {{ pet.status ?? 'brak danych' }}</p>
+
+    <p>
+        <a href="{{ path('pet_index') }}">Powrót do strony głównej</a>
+    </p>
+
+    <p>
+        <a href="#">Edytuj</a>
+    </p>
+{% endblock %}
