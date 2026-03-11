@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edytuj zwierzaka{% endblock %}
+
+{% block body %}
+    <h1>Edytuj zwierzaka</h1>
+
+    {{ form_start(form) }}
+        {{ form_row(form.id) }}
+        {{ form_row(form.name) }}
+        {{ form_row(form.status) }}
+        {{ form_row(form.save, { label: 'Zapisz zmiany' }) }}
+    {{ form_end(form) }}
+
+    <p>
+        <a href="{{ path('pet_show', { id: petId }) }}">Powrót do szczegółów</a>
+    </p>
+{% endblock %}
