@@ -38,4 +38,25 @@ final class PetstoreClient
 
         return $response->toArray(false);
     }
+
+    public function updatePet(array $data): array
+    {
+        $response = $this->httpClient->request(
+            'PUT',
+            sprintf('%s/pet', $this->petstoreApiBaseUrl),
+            [
+                'json' => $data,
+            ]
+        );
+
+        return $response->toArray(false);
+    }
+
+    public function deletePet(int $id): void
+    {
+        $this->httpClient->request(
+            'DELETE',
+            sprintf('%s/pet/%d', $this->petstoreApiBaseUrl, $id)
+        );
+    }
 }

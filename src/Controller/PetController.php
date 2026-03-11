@@ -32,7 +32,7 @@ final class PetController extends AbstractController
         $pet = $petstoreClient->getPetById($id);
 
         if ($pet === null) {
-            $this->addFlash('error', 'Nie znaleziono.');
+            $this->addFlash('error', 'Nie znaleziono zwierzaka o podanym ID.');
 
             return $this->redirectToRoute('pet_index');
         }
@@ -67,5 +67,54 @@ final class PetController extends AbstractController
         return $this->render('pet/create.html.twig', [
             'form' => $form->createView(),
         ]);
+    }
+
+    #[Route('/pet/edit/{id}', name: 'pet_edit', methods: ['GET', 'POST'])]
+    public function edit(int $id, Request $request, PetstoreClient $petstoreClient): Response
+    {
+        $pet = $petstoreClient->getPetById($id);
+
+        if ($pet === null) {
+            $this->addFlash('error', 'Nie znaleziono zwierzaka do edycji.');
+
+            return $this->redirectToRoute('pet_index');
+        }
+
+        $petData = new PetData();
+        $petData->id = $pet['id'] ?? null;
+        $petData->name = $pet['name'] ?? null;
+        $petData->status = $pet['status'] ?? null;
+
+        $form = $this->createForm(PetType::class, $petData);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $updatedPet = $petstoreClient->updatePet([
+                'id' => $petData->id,
+                'name' => $petData->name,
+                'status' => $petData->status,
+            ]);
+
+            $this->addFlash('success', 'Zwierzak został zaktualizowany.');
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $updatedPet['id'] ?? $petData->id,
+            ]);
+        }
+
+        return $this->render('pet/edit.html.twig', [
+            'form' => $form->createView(),
+            'petId' => $id,
+        ]);
+    }
+
+    #[Route('/pet/delete/{id}', name: 'pet_delete', methods: ['POST'])]
+    public function delete(int $id, PetstoreClient $petstoreClient): Response
+    {
+        $petstoreClient->deletePet($id);
+
+        $this->addFlash('success', 'Zwierzak został usunięty.');
+
+        return $this->redirectToRoute('pet_index');
     }
 }
