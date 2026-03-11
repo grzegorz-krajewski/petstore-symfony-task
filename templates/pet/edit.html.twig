@@ -5,19 +5,15 @@
 {% block body %}
     <h1>Edytuj zwierzaka</h1>
 
-    {{ form_start(form, { attr: { enctype: 'multipart/form-data' } }) }}
+    <p>Zarządzanie zdjęciami jest dostępne na ekranie szczegółów zwierzaka.</p>
+
+    {{ form_start(form) }}
         {{ form_row(form.id) }}
         {{ form_row(form.name) }}
         {{ form_row(form.status) }}
         {{ form_row(form.categoryId) }}
         {{ form_row(form.categoryName) }}
         {{ form_row(form.tagsInput) }}
-
-        <h2>Dodaj kolejne zdjęcia</h2>
-        <p>Możesz wybrać jeden lub wiele plików obrazu do przesłania po zapisaniu zmian.</p>
-        {{ form_row(form.imageUpload.additionalMetadata) }}
-        {{ form_row(form.imageUpload.images) }}
-
         {{ form_row(form.save) }}
     {{ form_end(form) }}
 
