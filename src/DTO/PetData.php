@@ -143,4 +143,17 @@ final class PetData
             )
         );
     }
+    
+    public function addPhotoUrl(string $photoUrl): void
+    {
+        $photoUrl = trim($photoUrl);
+
+        if ($photoUrl === '') {
+            return;
+        }
+
+        if (!in_array($photoUrl, $this->photoUrls, true)) {
+            $this->photoUrls[] = $photoUrl;
+        }
+    }
 }
