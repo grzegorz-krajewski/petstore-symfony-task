@@ -2,6 +2,7 @@
 
 namespace App\DTO;
 
+use App\Support\PetOptions;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class PetData
@@ -13,7 +14,7 @@ final class PetData
     #[Assert\NotBlank(message: 'Nazwa jest wymagana.')]
     #[Assert\Length(
         max: 255,
-        maxMessage: 'Nazwa przekracza dopuszczalną ilość znaków.'
+        maxMessage: 'Nazwa nie może być dłuższa niż 255 znaków.'
     )]
     public ?string $name = null;
 
@@ -32,9 +33,10 @@ final class PetData
     /** @var string[] */
     public array $photoUrls = [];
 
-    public ?int $categoryId = null;
-    public ?string $categoryName = null;
-    public ?string $tagsInput = null;
+    public ?string $selectedCategory = null;
+
+    /** @var string[] */
+    public array $selectedTags = [];
 
     public static function fromArray(array $data): self
     {
@@ -96,42 +98,49 @@ final class PetData
 
     public function syncStructuredFieldsFromFormInputs(): void
     {
-        $category = new CategoryData();
-        $category->id = $this->categoryId;
-        $category->name = $this->categoryName !== null ? trim($this->categoryName) : null;
+        $this->category = null;
 
-        $this->category = $category->isEmpty() ? null : $category;
+        if ($this->selectedCategory !== null && $this->selectedCategory !== '') {
+            $categoryId = (int) $this->selectedCategory;
+            $categoryName = PetOptions::getCategoryNameById($categoryId);
+
+            if ($categoryName !== null) {
+                $category = new CategoryData();
+                $category->id = $categoryId;
+                $category->name = $categoryName;
+                $this->category = $category;
+            }
+        }
 
         $this->tags = [];
-        if ($this->tagsInput !== null && trim($this->tagsInput) !== '') {
-            $parts = preg_split('/[\r\n,]+/', $this->tagsInput) ?: [];
-            $index = 1;
 
-            foreach ($parts as $part) {
-                $name = trim($part);
-                if ($name === '') {
-                    continue;
-                }
+        foreach ($this->selectedTags as $selectedTag) {
+            $tagId = (int) $selectedTag;
+            $tagName = PetOptions::getTagNameById($tagId);
 
-                $tag = new TagData();
-                $tag->id = $index;
-                $tag->name = $name;
-                $this->tags[] = $tag;
-                $index++;
+            if ($tagName === null) {
+                continue;
             }
+
+            $tag = new TagData();
+            $tag->id = $tagId;
+            $tag->name = $tagName;
+            $this->tags[] = $tag;
         }
     }
 
     public function syncFormInputsFromStructuredFields(): void
     {
-        $this->categoryId = $this->category?->id;
-        $this->categoryName = $this->category?->name;
-
-        $this->tagsInput = $this->tags !== []
-            ? implode(', ', array_map(
-                static fn (TagData $tag): string => (string) $tag->name,
-                $this->tags
-            ))
+        $this->selectedCategory = $this->category?->id !== null
+            ? (string) $this->category->id
             : null;
+
+        $this->selectedTags = array_map(
+            static fn (TagData $tag): string => (string) $tag->id,
+            array_filter(
+                $this->tags,
+                static fn (TagData $tag): bool => $tag->id !== null
+            )
+        );
     }
 }
