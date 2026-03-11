@@ -17,17 +17,18 @@ final class PetImageUploadType extends AbstractType
 
         $builder
             ->add('additionalMetadata', TextType::class, [
-                'label' => 'Dodatkowe metadane obrazu',
+                'label' => 'Dodatkowe metadane obrazów',
                 'required' => false,
             ])
-            ->add('image', FileType::class, [
-                'label' => 'Plik obrazu',
+            ->add('images', FileType::class, [
+                'label' => 'Pliki obrazów',
                 'required' => false,
+                'multiple' => true,
             ]);
 
         if (!$embedded) {
             $builder->add('save', SubmitType::class, [
-                'label' => 'Prześlij obraz',
+                'label' => 'Prześlij obrazy',
             ]);
         }
     }
