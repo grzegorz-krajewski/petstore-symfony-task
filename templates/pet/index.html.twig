@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Strona główna{% endblock %}
+
+{% block body %}
+    <h1>Petstore</h1>
+
+    <p>Aplikacja <code>/pet</code> z zewnętrznym API.</p>
+
+    <p>
+        <a href="{{ path('pet_create') }}">Dodaj</a>
+    </p>
+
+    <h2>Wyszukaj po ID</h2>
+
+    <form method="get" action="{{ path('pet_show') }}">
+        <label for="pet_id">ID zwierzaka:</label><br>
+        <input type="number" name="id" id="pet_id" required>
+        <button type="submit">Pobierz</button>
+    </form>
+{% endblock %}
