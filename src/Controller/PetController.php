@@ -67,13 +67,8 @@ final class PetController extends AbstractController
             try {
                 $createdPet = $petstoreClient->createPet($petData->toArray());
                 $petId = (int) ($createdPet['id'] ?? $petData->id);
-
-                $uploadedCount = $this->handleEmbeddedImagesUpload($form, $petId, $petstoreClient);
-
                 $this->addFlash('success', 'Zwierzak został dodany.');
-                if ($uploadedCount > 0) {
-                    $this->addFlash('success', sprintf('Przesłano %d obraz(ów) do API.', $uploadedCount));
-                }
+
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
@@ -123,13 +118,8 @@ final class PetController extends AbstractController
             try {
                 $updatedPet = $petstoreClient->updatePet($petData->toArray());
                 $petId = (int) ($updatedPet['id'] ?? $petData->id);
-
-                $uploadedCount = $this->handleEmbeddedImagesUpload($form, $petId, $petstoreClient);
-
                 $this->addFlash('success', 'Zwierzak został zaktualizowany.');
-                if ($uploadedCount > 0) {
-                    $this->addFlash('success', sprintf('Przesłano %d obraz(ów) do API.', $uploadedCount));
-                }
+
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
@@ -230,38 +220,5 @@ final class PetController extends AbstractController
         return $this->redirectToRoute('pet_show', [
             'id' => $id,
         ]);
-    }
-
-    private function handleEmbeddedImagesUpload(FormInterface $form, int $petId, PetstoreClient $petstoreClient): int
-    {
-        $imageUploadData = $form->get('imageUpload')->getData();
-
-        if (!is_array($imageUploadData)) {
-            return 0;
-        }
-
-        $images = $imageUploadData['images'] ?? [];
-
-        if (!is_array($images) || $images === []) {
-            return 0;
-        }
-
-        $uploadedCount = 0;
-
-        foreach ($images as $image) {
-            if (!$image instanceof UploadedFile) {
-                continue;
-            }
-
-            $petstoreClient->uploadPetImage(
-                $petId,
-                $image,
-                $imageUploadData['additionalMetadata'] ?? null
-            );
-
-            $uploadedCount++;
-        }
-
-        return $uploadedCount;
     }
 }
