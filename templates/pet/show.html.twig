@@ -24,8 +24,7 @@
             <ul>
                 {% for photoUrl in pet.photoUrls %}
                     <li>
-                        <a href="{{ photoUrl }}" target="_blank" rel="noopener noreferrer">{{ photoUrl }}</a>
-                    </li>
+                        <li>{{ photoUrl }}</li>
                 {% endfor %}
             </ul>
         {% else %}
