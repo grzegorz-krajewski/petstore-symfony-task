@@ -8,7 +8,6 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -47,10 +46,6 @@ final class PetType extends AbstractType
                 'label' => 'Tagi',
                 'required' => false,
                 'help' => 'Wpisz tagi oddzielone przecinkami.',
-            ])
-            ->add('photoUrlsInput', TextareaType::class, [
-                'label' => 'Adresy URL zdjęć',
-                'help' => 'Wpisz jeden adres w linii albo oddziel przecinkami.',
             ])
             ->add('imageUpload', PetImageUploadType::class, [
                 'label' => false,
