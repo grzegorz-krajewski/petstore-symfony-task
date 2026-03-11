@@ -52,6 +52,11 @@ final class PetType extends AbstractType
                 'label' => 'Adresy URL zdjęć',
                 'help' => 'Wpisz jeden adres w linii albo oddziel przecinkami.',
             ])
+            ->add('imageUpload', PetImageUploadType::class, [
+                'label' => false,
+                'mapped' => false,
+                'embedded' => true,
+            ])
             ->add('save', SubmitType::class, [
                 'label' => $isEdit ? 'Zapisz zmiany' : 'Zapisz',
             ]);
