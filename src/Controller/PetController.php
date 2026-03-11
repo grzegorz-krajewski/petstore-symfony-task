@@ -195,11 +195,22 @@ final class PetController extends AbstractController
                     continue;
                 }
 
-                $petstoreClient->uploadPetImage(
+                $uploadedPath = $petstoreClient->uploadPetImage(
                     $id,
                     $image,
                     $data['additionalMetadata'] ?? null
                 );
+
+                if ($uploadedPath !== null) {
+                    $pet = $petstoreClient->getPetById($id);
+
+                    if ($pet !== null) {
+                        $petData = PetData::fromArray($pet);
+                        $petData->addPhotoUrl($uploadedPath);
+
+                        $petstoreClient->updatePet($petData->toArray());
+                    }
+                }
 
                 $uploadedCount++;
             }
