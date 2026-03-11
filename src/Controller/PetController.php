@@ -8,6 +8,8 @@ use App\Form\PetImageUploadType;
 use App\Form\PetType;
 use App\Service\PetstoreClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -26,7 +28,7 @@ final class PetController extends AbstractController
         $id = $request->query->getInt('id');
 
         if ($id <= 0) {
-            $this->addFlash('error', 'Podano nieprawidłowe ID.');
+            $this->addFlash('error', 'Podano nieprawidłowe ID zwierzaka.');
 
             return $this->redirectToRoute('pet_index');
         }
@@ -40,7 +42,7 @@ final class PetController extends AbstractController
         }
 
         if ($pet === null) {
-            $this->addFlash('error', 'Nie znaleziono ID.');
+            $this->addFlash('error', 'Nie znaleziono zwierzaka o podanym ID.');
 
             return $this->redirectToRoute('pet_index');
         }
@@ -64,6 +66,14 @@ final class PetController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 $createdPet = $petstoreClient->createPet($petData->toArray());
+                $petId = (int) ($createdPet['id'] ?? $petData->id);
+
+                $uploadMessage = $this->handleEmbeddedImageUpload($form, $petId, $petstoreClient);
+
+                $this->addFlash('success', 'Zwierzak został dodany.');
+                if ($uploadMessage !== null) {
+                    $this->addFlash('success', $uploadMessage);
+                }
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
@@ -72,10 +82,8 @@ final class PetController extends AbstractController
                 ]);
             }
 
-            $this->addFlash('success', 'Zwierzak został dodany.');
-
             return $this->redirectToRoute('pet_show', [
-                'id' => $createdPet['id'] ?? $petData->id,
+                'id' => $petId,
             ]);
         }
 
@@ -114,6 +122,14 @@ final class PetController extends AbstractController
 
             try {
                 $updatedPet = $petstoreClient->updatePet($petData->toArray());
+                $petId = (int) ($updatedPet['id'] ?? $petData->id);
+
+                $uploadMessage = $this->handleEmbeddedImageUpload($form, $petId, $petstoreClient);
+
+                $this->addFlash('success', 'Zwierzak został zaktualizowany.');
+                if ($uploadMessage !== null) {
+                    $this->addFlash('success', $uploadMessage);
+                }
             } catch (PetstoreApiException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
@@ -123,10 +139,8 @@ final class PetController extends AbstractController
                 ]);
             }
 
-            $this->addFlash('success', 'Zwierzak został zaktualizowany.');
-
             return $this->redirectToRoute('pet_show', [
-                'id' => $updatedPet['id'] ?? $petData->id,
+                'id' => $petId,
             ]);
         }
 
@@ -175,7 +189,7 @@ final class PetController extends AbstractController
         $data = $form->getData();
         $image = $data['image'] ?? null;
 
-        if ($image === null) {
+        if (!$image instanceof UploadedFile) {
             $this->addFlash('error', 'Nie wybrano pliku.');
 
             return $this->redirectToRoute('pet_show', [
@@ -197,10 +211,33 @@ final class PetController extends AbstractController
             ]);
         }
 
-        $this->addFlash('success', 'Obraz został przesłany.');
+        $this->addFlash('success', 'Obraz został przesłany do API.');
 
         return $this->redirectToRoute('pet_show', [
             'id' => $id,
         ]);
+    }
+
+    private function handleEmbeddedImageUpload(FormInterface $form, int $petId, PetstoreClient $petstoreClient): ?string
+    {
+        $imageUploadData = $form->get('imageUpload')->getData();
+
+        if (!is_array($imageUploadData)) {
+            return null;
+        }
+
+        $image = $imageUploadData['image'] ?? null;
+
+        if (!$image instanceof UploadedFile) {
+            return null;
+        }
+
+        $petstoreClient->uploadPetImage(
+            $petId,
+            $image,
+            $imageUploadData['additionalMetadata'] ?? null
+        );
+
+        return 'Obraz został przesłany do API.';
     }
 }
