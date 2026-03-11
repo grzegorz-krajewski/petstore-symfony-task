@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\DTO\PetData;
+use App\Exception\PetstoreApiException;
 use App\Form\PetType;
 use App\Service\PetstoreClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,10 +30,16 @@ final class PetController extends AbstractController
             return $this->redirectToRoute('pet_index');
         }
 
-        $pet = $petstoreClient->getPetById($id);
+        try {
+            $pet = $petstoreClient->getPetById($id);
+        } catch (PetstoreApiException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('pet_index');
+        }
 
         if ($pet === null) {
-            $this->addFlash('error', 'Nie znaleziono zwierzaka o podanym ID.');
+            $this->addFlash('error', 'Nie znaleziono ID.');
 
             return $this->redirectToRoute('pet_index');
         }
@@ -51,11 +58,15 @@ final class PetController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $createdPet = $petstoreClient->createPet([
-                'id' => $petData->id,
-                'name' => $petData->name,
-                'status' => $petData->status,
-            ]);
+            try {
+                $createdPet = $petstoreClient->createPet($petData->toArray());
+            } catch (PetstoreApiException $exception) {
+                $this->addFlash('error', $exception->getMessage());
+
+                return $this->render('pet/create.html.twig', [
+                    'form' => $form->createView(),
+                ]);
+            }
 
             $this->addFlash('success', 'Zwierzak został dodany.');
 
@@ -72,7 +83,13 @@ final class PetController extends AbstractController
     #[Route('/pet/edit/{id}', name: 'pet_edit', methods: ['GET', 'POST'])]
     public function edit(int $id, Request $request, PetstoreClient $petstoreClient): Response
     {
-        $pet = $petstoreClient->getPetById($id);
+        try {
+            $pet = $petstoreClient->getPetById($id);
+        } catch (PetstoreApiException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('pet_index');
+        }
 
         if ($pet === null) {
             $this->addFlash('error', 'Nie znaleziono zwierzaka do edycji.');
@@ -80,20 +97,21 @@ final class PetController extends AbstractController
             return $this->redirectToRoute('pet_index');
         }
 
-        $petData = new PetData();
-        $petData->id = $pet['id'] ?? null;
-        $petData->name = $pet['name'] ?? null;
-        $petData->status = $pet['status'] ?? null;
-
+        $petData = PetData::fromArray($pet);
         $form = $this->createForm(PetType::class, $petData);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $updatedPet = $petstoreClient->updatePet([
-                'id' => $petData->id,
-                'name' => $petData->name,
-                'status' => $petData->status,
-            ]);
+            try {
+                $updatedPet = $petstoreClient->updatePet($petData->toArray());
+            } catch (PetstoreApiException $exception) {
+                $this->addFlash('error', $exception->getMessage());
+
+                return $this->render('pet/edit.html.twig', [
+                    'form' => $form->createView(),
+                    'petId' => $id,
+                ]);
+            }
 
             $this->addFlash('success', 'Zwierzak został zaktualizowany.');
 
@@ -111,7 +129,13 @@ final class PetController extends AbstractController
     #[Route('/pet/delete/{id}', name: 'pet_delete', methods: ['POST'])]
     public function delete(int $id, PetstoreClient $petstoreClient): Response
     {
-        $petstoreClient->deletePet($id);
+        try {
+            $petstoreClient->deletePet($id);
+        } catch (PetstoreApiException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('pet_index');
+        }
 
         $this->addFlash('success', 'Zwierzak został usunięty.');
 
