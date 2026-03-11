@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\DTO\PetData;
+use App\Support\PetOptions;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -34,18 +35,18 @@ final class PetType extends AbstractType
                 ],
                 'placeholder' => 'Wybierz status',
             ])
-            ->add('categoryId', IntegerType::class, [
-                'label' => 'ID kategorii',
+            ->add('selectedCategory', ChoiceType::class, [
+                'label' => 'Kategoria',
                 'required' => false,
+                'placeholder' => 'Wybierz kategorię',
+                'choices' => PetOptions::getCategoryChoices(),
             ])
-            ->add('categoryName', TextType::class, [
-                'label' => 'Nazwa kategorii',
-                'required' => false,
-            ])
-            ->add('tagsInput', TextType::class, [
+            ->add('selectedTags', ChoiceType::class, [
                 'label' => 'Tagi',
                 'required' => false,
-                'help' => 'Wpisz tagi oddzielone przecinkami.',
+                'multiple' => true,
+                'expanded' => false,
+                'choices' => PetOptions::getTagChoices(),
             ])
             ->add('save', SubmitType::class, [
                 'label' => $isEdit ? 'Zapisz zmiany' : 'Zapisz',
