@@ -1,21 +1,73 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Szczegóły {% endblock %}
+{% block title %}Szczegóły zwierzaka{% endblock %}
 
 {% block body %}
-    <h1>Szczegóły</h1>
+    <h1>Szczegóły zwierzaka</h1>
 
-    <p><strong>ID:</strong> {{ pet.id ?? 'brak danych' }}</p>
-    <p><strong>Nazwa:</strong> {{ pet.name ?? 'brak danych' }}</p>
-    <p><strong>Status:</strong> {{ pet.status ?? 'brak danych' }}</p>
+    <p><strong>ID:</strong> {{ pet.id ?? 'brak' }}</p>
+    <p><strong>Nazwa:</strong> {{ pet.name ?? 'brak' }}</p>
+    <p><strong>Status:</strong> {{ pet.status ?? 'brak' }}</p>
 
     <p>
-        <a href="{{ path('pet_edit', { id: pet.id }) }}">Edytuj</a>
+        <strong>Kategoria:</strong>
+        {% if pet.category is defined and pet.category %}
+            {{ pet.category.name ?? 'brak nazwy' }}{% if pet.category.id is defined %} (ID: {{ pet.category.id }}){% endif %}
+        {% else %}
+            brak
+        {% endif %}
+    </p>
+
+    <div>
+        <strong>Adresy zdjęć:</strong>
+        {% if pet.photoUrls is defined and pet.photoUrls is not empty %}
+            <ul>
+                {% for photoUrl in pet.photoUrls %}
+                    <li>
+                        <a href="{{ photoUrl }}" target="_blank" rel="noopener noreferrer">{{ photoUrl }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            brak
+        {% endif %}
+    </div>
+
+    <div>
+        <strong>Tagi:</strong>
+        {% if pet.tags is defined and pet.tags is not empty %}
+            <ul>
+                {% for tag in pet.tags %}
+                    <li>
+                        {{ tag.name ?? 'brak nazwy' }}
+                        {% if tag.id is defined %}(ID: {{ tag.id }}){% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            brak
+        {% endif %}
+    </div>
+
+    <p>
+        <a href="{{ path('pet_edit', { id: pet.id }) }}">Edytuj zwierzaka</a>
     </p>
 
     <form method="post" action="{{ path('pet_delete', { id: pet.id }) }}">
-        <button type="submit">Usuń</button>
+        <input type="hidden" name="_token" value="{{ csrf_token('delete_pet_' ~ pet.id) }}">
+        <button type="submit">Usuń zwierzaka</button>
     </form>
+
+    <h2>Prześlij obraz</h2>
+
+    {{ form_start(uploadForm, {
+        action: path('pet_upload_image', { id: pet.id }),
+        attr: { enctype: 'multipart/form-data' }
+    }) }}
+        {{ form_row(uploadForm.additionalMetadata) }}
+        {{ form_row(uploadForm.image) }}
+        {{ form_row(uploadForm.save) }}
+    {{ form_end(uploadForm) }}
 
     <p>
         <a href="{{ path('pet_index') }}">Powrót do strony głównej</a>
