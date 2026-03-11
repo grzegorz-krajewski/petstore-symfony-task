@@ -9,7 +9,11 @@
         {{ form_row(form.id) }}
         {{ form_row(form.name) }}
         {{ form_row(form.status) }}
-        {{ form_row(form.save, { label: 'Zapisz zmiany' }) }}
+        {{ form_row(form.categoryId) }}
+        {{ form_row(form.categoryName) }}
+        {{ form_row(form.tagsInput) }}
+        {{ form_row(form.photoUrlsInput) }}
+        {{ form_row(form.save) }}
     {{ form_end(form) }}
 
     <p>
