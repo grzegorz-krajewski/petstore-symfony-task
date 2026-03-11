@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\DTO\PetData;
+use App\Form\PetType;
 use App\Service\PetstoreClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,8 +43,29 @@ final class PetController extends AbstractController
     }
 
     #[Route('/pet/create', name: 'pet_create', methods: ['GET', 'POST'])]
-    public function create(): Response
+    public function create(Request $request, PetstoreClient $petstoreClient): Response
     {
-        return new Response('Tutaj będzie dodawanie.');
+        $petData = new PetData();
+        $form = $this->createForm(PetType::class, $petData);
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $createdPet = $petstoreClient->createPet([
+                'id' => $petData->id,
+                'name' => $petData->name,
+                'status' => $petData->status,
+            ]);
+
+            $this->addFlash('success', 'Zwierzak został dodany.');
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $createdPet['id'] ?? $petData->id,
+            ]);
+        }
+
+        return $this->render('pet/create.html.twig', [
+            'form' => $form->createView(),
+        ]);
     }
 }

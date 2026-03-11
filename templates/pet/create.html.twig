@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dodaj{% endblock %}
+
+{% block body %}
+    <h1>Dodaj</h1>
+
+    {{ form_start(form) }}
+        {{ form_row(form.id) }}
+        {{ form_row(form.name) }}
+        {{ form_row(form.status) }}
+        {{ form_row(form.save) }}
+    {{ form_end(form) }}
+
+    <p>
+        <a href="{{ path('pet_index') }}">Powrót do strony głównej</a>
+    </p>
+{% endblock %}

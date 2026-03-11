@@ -25,4 +25,17 @@ final class PetstoreClient
 
         return $response->toArray(false);
     }
+
+    public function createPet(array $data): array
+    {
+        $response = $this->httpClient->request(
+            'POST',
+            sprintf('%s/pet', $this->petstoreApiBaseUrl),
+            [
+                'json' => $data,
+            ]
+        );
+
+        return $response->toArray(false);
+    }
 }
