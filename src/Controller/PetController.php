@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\DTO\PetData;
 use App\Exception\PetstoreApiException;
+use App\Form\PetImageUploadType;
 use App\Form\PetType;
 use App\Service\PetstoreClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -44,8 +45,11 @@ final class PetController extends AbstractController
             return $this->redirectToRoute('pet_index');
         }
 
+        $uploadForm = $this->createForm(PetImageUploadType::class);
+
         return $this->render('pet/show.html.twig', [
             'pet' => $pet,
+            'uploadForm' => $uploadForm->createView(),
         ]);
     }
 
@@ -98,10 +102,16 @@ final class PetController extends AbstractController
         }
 
         $petData = PetData::fromArray($pet);
-        $form = $this->createForm(PetType::class, $petData);
+
+        $form = $this->createForm(PetType::class, $petData, [
+            'is_edit' => true,
+        ]);
+
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $petData->id = $id;
+
             try {
                 $updatedPet = $petstoreClient->updatePet($petData->toArray());
             } catch (PetstoreApiException $exception) {
@@ -127,8 +137,14 @@ final class PetController extends AbstractController
     }
 
     #[Route('/pet/delete/{id}', name: 'pet_delete', methods: ['POST'])]
-    public function delete(int $id, PetstoreClient $petstoreClient): Response
+    public function delete(int $id, Request $request, PetstoreClient $petstoreClient): Response
     {
+        if (!$this->isCsrfTokenValid('delete_pet_'.$id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Nieprawidłowy token bezpieczeństwa.');
+
+            return $this->redirectToRoute('pet_index');
+        }
+
         try {
             $petstoreClient->deletePet($id);
         } catch (PetstoreApiException $exception) {
@@ -140,5 +156,51 @@ final class PetController extends AbstractController
         $this->addFlash('success', 'Zwierzak został usunięty.');
 
         return $this->redirectToRoute('pet_index');
+    }
+
+    #[Route('/pet/{id}/upload-image', name: 'pet_upload_image', methods: ['POST'])]
+    public function uploadImage(int $id, Request $request, PetstoreClient $petstoreClient): Response
+    {
+        $form = $this->createForm(PetImageUploadType::class);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('error', 'Nie udało się przesłać obrazu.');
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $id,
+            ]);
+        }
+
+        $data = $form->getData();
+        $image = $data['image'] ?? null;
+
+        if ($image === null) {
+            $this->addFlash('error', 'Nie wybrano pliku.');
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $id,
+            ]);
+        }
+
+        try {
+            $petstoreClient->uploadPetImage(
+                $id,
+                $image,
+                $data['additionalMetadata'] ?? null
+            );
+        } catch (PetstoreApiException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('pet_show', [
+                'id' => $id,
+            ]);
+        }
+
+        $this->addFlash('success', 'Obraz został przesłany.');
+
+        return $this->redirectToRoute('pet_show', [
+            'id' => $id,
+        ]);
     }
 }
