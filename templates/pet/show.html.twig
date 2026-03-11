@@ -58,14 +58,14 @@
         <button type="submit">Usuń zwierzaka</button>
     </form>
 
-    <h2>Prześlij obraz</h2>
+   <h2>Prześlij kolejne obrazy</h2>
 
     {{ form_start(uploadForm, {
         action: path('pet_upload_image', { id: pet.id }),
         attr: { enctype: 'multipart/form-data' }
     }) }}
         {{ form_row(uploadForm.additionalMetadata) }}
-        {{ form_row(uploadForm.image) }}
+        {{ form_row(uploadForm.images) }}
         {{ form_row(uploadForm.save) }}
     {{ form_end(uploadForm) }}
 
