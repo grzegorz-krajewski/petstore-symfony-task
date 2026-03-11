@@ -37,6 +37,31 @@ final class PetstoreClient
         }
     }
 
+    public function findPetsByStatus(string $status): array
+    {
+        try {
+            $response = $this->httpClient->request(
+                'GET',
+                sprintf('%s/pet/findByStatus', $this->petstoreApiBaseUrl),
+                [
+                    'query' => [
+                        'status' => $status,
+                    ],
+                ]
+            );
+
+            if ($response->getStatusCode() >= 400) {
+                throw new PetstoreApiException('Nie udało się pobrać listy zwierzaków.');
+            }
+
+            $data = $response->toArray(false);
+
+            return is_array($data) ? $data : [];
+        } catch (ExceptionInterface $exception) {
+            throw new PetstoreApiException('Wystąpił błąd podczas pobierania listy zwierzaków.', 0, $exception);
+        }
+    }
+
     public function createPet(array $data): array
     {
         try {
