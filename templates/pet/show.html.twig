@@ -23,8 +23,7 @@
         {% if pet.photoUrls is defined and pet.photoUrls is not empty %}
             <ul>
                 {% for photoUrl in pet.photoUrls %}
-                    <li>
-                        <li>{{ photoUrl }}</li>
+                    <li>{{ photoUrl }}</li>
                 {% endfor %}
             </ul>
         {% else %}
