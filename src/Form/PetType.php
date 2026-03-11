@@ -47,11 +47,6 @@ final class PetType extends AbstractType
                 'required' => false,
                 'help' => 'Wpisz tagi oddzielone przecinkami.',
             ])
-            ->add('imageUpload', PetImageUploadType::class, [
-                'label' => false,
-                'mapped' => false,
-                'embedded' => true,
-            ])
             ->add('save', SubmitType::class, [
                 'label' => $isEdit ? 'Zapisz zmiany' : 'Zapisz',
             ]);
