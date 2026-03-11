@@ -12,11 +12,11 @@
         {{ form_row(form.categoryId) }}
         {{ form_row(form.categoryName) }}
         {{ form_row(form.tagsInput) }}
-        {{ form_row(form.photoUrlsInput) }}
 
-        <h2>Opcjonalny upload obrazu</h2>
+        <h2>Dodaj kolejne zdjęcia</h2>
+        <p>Możesz wybrać jeden lub wiele plików obrazu do przesłania po zapisaniu zmian.</p>
         {{ form_row(form.imageUpload.additionalMetadata) }}
-        {{ form_row(form.imageUpload.image) }}
+        {{ form_row(form.imageUpload.images) }}
 
         {{ form_row(form.save) }}
     {{ form_end(form) }}
