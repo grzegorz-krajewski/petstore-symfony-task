@@ -23,4 +23,23 @@ final class PetData
         message: 'Wybierz poprawny status.'
     )]
     public ?string $status = null;
+
+    public static function fromArray(array $data): self
+    {
+        $petData = new self();
+        $petData->id = isset($data['id']) ? (int) $data['id'] : null;
+        $petData->name = $data['name'] ?? null;
+        $petData->status = $data['status'] ?? null;
+
+        return $petData;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'status' => $this->status,
+        ];
+    }
 }
