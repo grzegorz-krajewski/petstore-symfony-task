@@ -19,10 +19,6 @@ final class PetType extends AbstractType
         $isEdit = $options['is_edit'];
 
         $builder
-            ->add('id', IntegerType::class, [
-                'label' => 'ID',
-                'disabled' => $isEdit,
-            ])
             ->add('name', TextType::class, [
                 'label' => 'Nazwa',
             ])

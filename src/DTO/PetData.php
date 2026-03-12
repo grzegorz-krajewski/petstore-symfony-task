@@ -7,8 +7,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class PetData
 {
-    #[Assert\NotNull(message: 'ID jest wymagane.')]
-    #[Assert\Positive(message: 'ID musi być dodatnią liczbą.')]
     public ?int $id = null;
 
     #[Assert\NotBlank(message: 'Nazwa jest wymagana.')]

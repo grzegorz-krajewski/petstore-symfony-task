@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\Exception\PetstoreApiException;
+use Symfony\Component\Mime\Part\DataPart;
+use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -121,14 +123,22 @@ final class PetstoreClient
     public function uploadPetImage(int $id, UploadedFile $image, ?string $additionalMetadata = null): ?string
     {
         try {
+            $formFields = [
+                'additionalMetadata' => $additionalMetadata ?? '',
+                'file' => DataPart::fromPath(
+                    $image->getPathname(),
+                    $image->getClientOriginalName()
+                ),
+            ];
+
+            $formData = new FormDataPart($formFields);
+
             $response = $this->httpClient->request(
                 'POST',
                 sprintf('%s/pet/%d/uploadImage', $this->petstoreApiBaseUrl, $id),
                 [
-                    'body' => [
-                        'additionalMetadata' => $additionalMetadata ?? '',
-                        'file' => fopen($image->getPathname(), 'r'),
-                    ],
+                    'headers' => $formData->getPreparedHeaders()->toArray(),
+                    'body' => $formData->bodyToIterable(),
                 ]
             );
 
@@ -157,5 +167,10 @@ final class PetstoreClient
         $path = trim($matches[1]);
 
         return $path !== '' ? $path : null;
+    }
+
+    public function petExists(int $id): bool
+    {
+        return $this->getPetById($id) !== null;
     }
 }
