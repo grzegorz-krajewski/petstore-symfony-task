@@ -3,19 +3,61 @@
 {% block title %}Strona główna{% endblock %}
 
 {% block body %}
-    <h1>Petstore</h1>
+    <h1>Pet Form</h1>
 
-    <p>Aplikacja <code>/pet</code> z zewnętrznym API.</p>
+    <p>Prosty interfejs do obsługi zasobu 'pet' w zewnętrznym API.</p>
 
     <p>
-        <a href="{{ path('pet_create') }}">Dodaj</a>
+        <a href="{{ path('pet_create') }}">Dodaj zwierzaka</a>
     </p>
 
-    <h2>Wyszukaj po ID</h2>
+    <h2>Wyszukaj zwierzaka po ID</h2>
 
     <form method="get" action="{{ path('pet_show') }}">
         <label for="pet_id">ID zwierzaka:</label><br>
         <input type="number" name="id" id="pet_id" required>
         <button type="submit">Pobierz</button>
     </form>
+
+    <h2>Lista zwierzaków po statusie</h2>
+
+    <form method="get" action="{{ path('pet_index') }}">
+        <label for="status">Status:</label><br>
+        <select name="status" id="status">
+            <option value="">Wybierz status</option>
+            {% for value, label in availableStatuses %}
+                <option value="{{ value }}" {% if selectedStatus == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Pokaż listę</button>
+    </form>
+
+    {% if selectedStatus != '' %}
+        <h3>Wyniki dla statusu: {{ selectedStatus }}</h3>
+
+        {% if pets is not empty %}
+            <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; border-bottom: 1px solid #ccc; padding: 8px;">ID</th>
+                        <th style="text-align: left; border-bottom: 1px solid #ccc; padding: 8px;">Nazwa</th>
+                        <th style="text-align: left; border-bottom: 1px solid #ccc; padding: 8px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pet in pets %}
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="{{ path('pet_show', { id: pet.id }) }}">{{ pet.id ?? 'brak' }}</a></td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="{{ path('pet_show', { id: pet.id }) }}">{{ pet.name ?? 'brak' }}</a></td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ pet.status ?? 'brak' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Brak rekordów dla wybranego statusu.</p>
+        {% endif %}
+    {% endif %}
 {% endblock %}

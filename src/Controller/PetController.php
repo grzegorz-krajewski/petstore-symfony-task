@@ -17,9 +17,28 @@ use Symfony\Component\Routing\Attribute\Route;
 final class PetController extends AbstractController
 {
     #[Route('/', name: 'pet_index', methods: ['GET'])]
-    public function index(): Response
+    public function index(Request $request, PetstoreClient $petstoreClient): Response
     {
-        return $this->render('pet/index.html.twig');
+        $selectedStatus = (string) $request->query->get('status', '');
+        $pets = [];
+
+        if ($selectedStatus !== '') {
+            try {
+                $pets = $petstoreClient->findPetsByStatus($selectedStatus);
+            } catch (PetstoreApiException $exception) {
+                $this->addFlash('error', $exception->getMessage());
+            }
+        }
+
+        return $this->render('pet/index.html.twig', [
+            'selectedStatus' => $selectedStatus,
+            'pets' => $pets,
+            'availableStatuses' => [
+                'available' => 'available',
+                'pending' => 'pending',
+                'sold' => 'sold',
+            ],
+        ]);
     }
 
     #[Route('/pet/show', name: 'pet_show', methods: ['GET'])]
