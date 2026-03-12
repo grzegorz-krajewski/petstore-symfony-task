@@ -54,9 +54,7 @@ final class PetstoreClient
                 throw new PetstoreApiException('Nie udało się pobrać listy zwierzaków.');
             }
 
-            $data = $response->toArray(false);
-
-            return is_array($data) ? $data : [];
+            return $response->toArray(false);
         } catch (ExceptionInterface $exception) {
             throw new PetstoreApiException('Wystąpił błąd podczas pobierania listy zwierzaków.', 0, $exception);
         }
