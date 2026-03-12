@@ -7,6 +7,7 @@ use App\Exception\PetstoreApiException;
 use App\Form\PetImageUploadType;
 use App\Form\PetType;
 use App\Service\PetstoreClient;
+use App\Service\PetIdGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -75,15 +76,15 @@ final class PetController extends AbstractController
     }
 
     #[Route('/pet/create', name: 'pet_create', methods: ['GET', 'POST'])]
-    public function create(Request $request, PetstoreClient $petstoreClient): Response
+    public function create(Request $request, PetstoreClient $petstoreClient, PetIdGenerator $petIdGenerator): Response
     {
         $petData = new PetData();
         $form = $this->createForm(PetType::class, $petData);
-
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             try {
+                $petData->id = $petIdGenerator->generate();
                 $createdPet = $petstoreClient->createPet($petData->toArray());
                 $petId = (int) ($createdPet['id'] ?? $petData->id);
                 $this->addFlash('success', 'Zwierzak został dodany.');
